@@ -10,6 +10,10 @@ This project implements an Airflow DAG to fetch YouTube channel and video data u
 
 ![Dag Flow](images/airflow_dag.png "YouTube Pipeline Dag")
 
+## Metabase Dashboard
+
+![Dashboard](images/dashboard.gif "YT Metrics Dashboard")
+
 ## Features
 
 - Fetch YouTube channel statistics and video details using the YouTube Data API.
