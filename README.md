@@ -4,7 +4,7 @@ This project implements an Airflow DAG to fetch YouTube channel and video data u
 
 ## Architecture
 
-![Pipeline Flow](images\pipeline_architecture.png "YouTube Pipeline Flow")
+![Pipeline Flow](/images/pipeline_architecture.png "YouTube Pipeline Flow")
 
 ## Features
 
