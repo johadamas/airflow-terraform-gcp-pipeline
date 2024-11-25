@@ -1,62 +1,54 @@
-Overview
-========
+# YouTube Data Pipeline with Airflow
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+This project implements an Airflow DAG to fetch YouTube channel and video data using the YouTube Data API, transform it, and load it into Google Cloud Storage (GCS) and BigQuery. The DAG also includes Terraform tasks for infrastructure setup and dbt transformations for marts and reports model.
 
-Project Contents
-================
+## Architecture
 
-Your Astro project contains the following files and folders:
+![Pipeline Flow](images\pipeline_architecture.png "YouTube Pipeline Flow")
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+## Features
 
-Deploy Your Project Locally
-===========================
+- Fetch YouTube channel statistics and video details using the YouTube Data API.
+- Save the data as a CSV file locally.
+- Upload the CSV file to Google Cloud Storage (GCS).
+- Load the data from GCS into BigQuery.
+- Perform transformations using dbt to create marts and reports.
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+## Prerequisites
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+Ensure you have the following configured:
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+- **YouTube Data API Key**: Add the API key as an Airflow Variable (`YT_API_KEY`).
+- **Channel IDs**: Add channel IDs as Airflow Variables (`MiawAug`, `WindahB`).
+- **Google Cloud Platform**:
+  - GCS bucket and BigQuery dataset/table set up.
+  - GCP connection configured in Airflow (`gcp`).
+- **Terraform**:
+  - Terraform configurations for resource provisioning.
+  - Mounted Terraform directory in the Airflow container.
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+## DAG Structure
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+### Tasks
 
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
+1. **Fetch YouTube Data**:  
+   Fetches channel statistics and video details, filters the data, and saves it to a local CSV file.
+   
+2. **Terraform Tasks**:
+   - `terraform_init`: Initializes the Terraform working directory.
+   - `terraform_apply`: Applies the Terraform configuration.
 
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
+3. **Upload to GCS**:  
+   Uploads the generated CSV file to a specified GCS bucket.
 
-Deploy Your Project to Astronomer
-=================================
+4. **Load to BigQuery**:  
+   Loads the CSV data from GCS into a BigQuery table.
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+5. **dbt Transformations**:  
+   - `transform_marts`: dbt transformations for marts.
+   - `transform_report`: dbt transformations for reports.
 
-Contact
-=======
+### Dependencies
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
-
-How to destroy all resource in Google Cloud
-
-1. Delete all tables in BQ
-    - Open BQ Cloud Shell
-    - bq ls testproject-bq-02:youtube_tf        = list all available table
-    - bq rm -r -f testproject-bq-02:youtube_tf  = delete all available table
-
-2. Delete all content in GCS
-
-3. Perform 'terraform destroy'
-    - terraform -chdir=/usr/local/airflow/include/terraform destroy
-
-
+```plaintext
+get_youtube_data -> terraform_tasks -> upload_to_gcs -> load_data_to_bq -> transform_marts -> transform_report
